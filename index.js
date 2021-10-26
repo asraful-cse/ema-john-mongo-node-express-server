@@ -24,12 +24,31 @@ async function run() {
 		console.log("database connected");
 		const database = client.db("online_shop");
 		const productCollection = database.collection("products");
-		// Get products API
+		// Get products API------------------------------------
 		app.get("/products", async (req, res) => {
-			const curser = productCollection.find({});
-			const products = await curser.toArray(curser);
-			const count = await curser.count();
+			// console.log(req.query);
+			const cursor = productCollection.find({});
+			const page = req.query.page;
+			const size = parseInt(req.query.size);
+			let products;
+			const count = await cursor.count();
+			if (page) {
+				products = await cursor
+					.skip(page * size)
+					.limit(size)
+					.toArray();
+			} else {
+				products = await cursor.toArray();
+			}
+
 			res.send({ count, products });
+		});
+		// use post to get data by keys------------------------
+		app.post("/products/byKeys", async (req, res) => {
+			const keys = req.body;
+			const query = { key: { $in: keys } };
+			const products = await productCollection.find(query).toArray();
+			res.json(products);
 		});
 	} finally {
 		// await client.close();
